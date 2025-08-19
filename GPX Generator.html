@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPX Run Simulator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- LeafletJS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- JSZip for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-container {
+            height: 350px;
+            width: 100%;
+            border-radius: 0.5rem;
+            z-index: 0;
+        }
+        .preview-map-container {
+            height: 500px;
+            width: 100%;
+        }
+        .slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #d71921; /* AIA Red */
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .loader {
+            border-top-color: #d71921; /* AIA Red */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-900">GPX Run Simulator</h1>
+            <p class="text-slate-600 mt-2">Tạo dữ liệu chạy bộ GPX chân thực cho Strava</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Controls -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Start Location Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="map-pin" class="w-5 h-5 mr-2 text-red-500"></i>Vị trí bắt đầu</h2>
+                    <div id="map"></div>
+                    <div class="mt-4">
+                        <div class="flex flex-wrap gap-2" id="city-selector">
+                           <!-- City buttons will be inserted here -->
+                        </div>
+                    </div>
+                    <!-- Hidden lat/lon inputs -->
+                    <input type="hidden" id="lat" value="10.7769">
+                    <input type="hidden" id="lon" value="106.7009">
+                </div>
+
+                <!-- Performance Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="zap" class="w-5 h-5 mr-2 text-red-500"></i>Thông số hiệu suất</h2>
+                    <div>
+                        <label for="distance" class="block text-sm font-medium text-slate-700">Quãng đường (<span id="distance-label">6.0</span> km)</label>
+                        <input type="range" id="distance" min="1" max="42" value="6" step="0.1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="mt-4">
+                        <label for="pace" class="block text-sm font-medium text-slate-700">Pace trung bình (<span id="pace-label">7:30</span> /km)</label>
+                        <input type="range" id="pace" min="210" max="600" value="450" step="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <input id="randomize" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                        <label for="randomize" class="ml-2 block text-sm text-slate-900">Thêm ngẫu nhiên (+/- 10%)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Generation & Results -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Batch Generation Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="calendar-days" class="w-5 h-5 mr-2 text-red-500"></i>Thiết lập xuất hàng loạt</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="start-date-display" class="block text-sm font-medium text-slate-700">Ngày bắt đầu</label>
+                            <div class="relative mt-1">
+                                <div id="start-date-display" class="w-full rounded-md border border-slate-300 shadow-sm bg-white px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-slate-800">
+                                    <span></span>
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>
+                                </div>
+                                <input type="date" id="start-date" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="end-date-display" class="block text-sm font-medium text-slate-700">Ngày kết thúc</label>
+                             <div class="relative mt-1">
+                                <div id="end-date-display" class="w-full rounded-md border border-slate-300 shadow-sm bg-white px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-slate-800">
+                                    <span></span>
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>
+                                </div>
+                                <input type="date" id="end-date" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="flex flex-wrap gap-2" id="quick-date-selector">
+                            <!-- Quick select buttons will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-slate-700">Khung giờ chạy trong ngày</label>
+                        <div class="grid grid-cols-2 gap-4 mt-1">
+                            <div>
+                                <label for="start-time" class="block text-xs text-slate-500">Sớm nhất lúc</label>
+                                <input type="time" id="start-time" value="05:00" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="end-time" class="block text-xs text-slate-500">Muộn nhất lúc</label>
+                                <input type="time" id="end-time" value="16:00" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <button id="generate-btn" class="mt-6 w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center justify-center">
+                        <i data-lucide="play" class="w-5 h-5 mr-2"></i>
+                        Tạo File GPX
+                    </button>
+                </div>
+
+                <!-- Results Card -->
+                <div id="results-card" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <div class="flex justify-between items-center mb-4">
+                         <h2 class="text-xl font-semibold flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-2 text-green-500"></i>Hoàn tất!</h2>
+                         <div class="flex items-center">
+                            <input id="select-all-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                            <label for="select-all-checkbox" class="ml-2 block text-sm text-slate-900">Chọn tất cả</label>
+                        </div>
+                    </div>
+                    <p id="results-summary" class="text-slate-600 mb-4"></p>
+                    <div id="file-list" class="max-h-60 overflow-y-auto space-y-2 pr-2"></div>
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <div class="flex items-center mb-4">
+                            <input id="zip-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                            <label for="zip-checkbox" class="ml-2 block text-sm text-slate-900">Gom thành 1 file .zip</label>
+                        </div>
+                        <button id="download-selected-btn" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center">
+                            <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                            Tải File Đã Chọn
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl flex items-center space-x-4">
+            <div class="loader w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div>
+                <p id="loading-text" class="text-lg font-semibold text-slate-800">Đang tạo dữ liệu...</p>
+                <p id="loading-progress" class="text-slate-600">File 1 / 10</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-4 rounded-lg shadow-xl w-11/12 max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="preview-title" class="text-lg font-semibold text-slate-900">Xem trước quỹ đạo</h3>
+                <button id="close-preview-btn" class="text-slate-500 hover:text-slate-800">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="preview-map" class="preview-map-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- INITIALIZE ICONS ---
+        lucide.createIcons();
+
+        // --- UI ELEMENTS ---
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const distanceSlider = document.getElementById('distance');
+        const distanceLabel = document.getElementById('distance-label');
+        const paceSlider = document.getElementById('pace');
+        const paceLabel = document.getElementById('pace-label');
+        const generateBtn = document.getElementById('generate-btn');
+        const loadingModal = document.getElementById('loading-modal');
+        const loadingText = document.getElementById('loading-text');
+        const loadingProgress = document.getElementById('loading-progress');
+        const resultsCard = document.getElementById('results-card');
+        const resultsSummary = document.getElementById('results-summary');
+        const fileList = document.getElementById('file-list');
+        const downloadSelectedBtn = document.getElementById('download-selected-btn');
+        const zipCheckbox = document.getElementById('zip-checkbox');
+        const previewModal = document.getElementById('preview-modal');
+        const previewTitle = document.getElementById('preview-title');
+        const closePreviewBtn = document.getElementById('close-preview-btn');
+        const quickDateSelector = document.getElementById('quick-date-selector');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const startDateDisplay = document.getElementById('start-date-display').querySelector('span');
+        const endDateDisplay = document.getElementById('end-date-display').querySelector('span');
+        const citySelector = document.getElementById('city-selector');
+
+        let generatedFiles = [];
+        let previewMap = null;
+
+        const CITIES = {
+            "TP.HCM": { lat: 10.7769, lon: 106.7009 },
+            "Hà Nội": { lat: 21.0278, lon: 105.8342 },
+            "Hải Phòng": { lat: 20.8449, lon: 106.6881 },
+            "Cần Thơ": { lat: 10.0452, lon: 105.7469 },
+            "Đà Nẵng": { lat: 16.0545, lon: 108.2022 },
+            "Bình Dương": { lat: 11.0015, lon: 106.6599 },
+            "Đồng Nai": { lat: 10.9576, lon: 106.8421 },
+            "Thanh Hóa": { lat: 19.8065, lon: 105.7784 },
+            "Nghệ An": { lat: 18.6753, lon: 105.6914 },
+            "Hải Dương": { lat: 20.9383, lon: 106.3036 }
+        };
+
+        const mapUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const mapAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+        
+        // --- MAP INITIALIZATION ---
+        const map = L.map('map').setView([10.7769, 106.7009], 13);
+        L.tileLayer(mapUrl, {
+            maxZoom: 19,
+            attribution: mapAttribution
+        }).addTo(map);
+        let marker = L.marker([10.7769, 106.7009], { draggable: true }).addTo(map);
+
+        // --- UI EVENT LISTENERS ---
+        marker.on('dragend', function(event) {
+            const position = marker.getLatLng();
+            latInput.value = position.lat.toFixed(6);
+            lonInput.value = position.lng.toFixed(6);
+        });
+
+        distanceSlider.addEventListener('input', (e) => {
+            distanceLabel.textContent = parseFloat(e.target.value).toFixed(1);
+        });
+
+        paceSlider.addEventListener('input', (e) => {
+            const totalSeconds = parseInt(e.target.value);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            paceLabel.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        });
+
+        generateBtn.addEventListener('click', handleGeneration);
+        downloadSelectedBtn.addEventListener('click', downloadSelectedFiles);
+        closePreviewBtn.addEventListener('click', () => previewModal.classList.add('hidden'));
+
+        startDateInput.addEventListener('change', () => formatDateDisplay(startDateInput, startDateDisplay));
+        endDateInput.addEventListener('change', () => formatDateDisplay(endDateInput, endDateDisplay));
+
+        // --- HELPER FUNCTIONS ---
+        function formatDateDisplay(inputElement, displayElement) {
+            if (inputElement.value) {
+                const [year, month, day] = inputElement.value.split('-');
+                displayElement.textContent = `${day}/${month}/${year}`;
+            } else {
+                displayElement.textContent = 'Chọn ngày';
+            }
+        }
+        
+        function updateMapLocation(lat, lon) {
+            latInput.value = lat.toFixed(6);
+            lonInput.value = lon.toFixed(6);
+            const newLatLng = new L.LatLng(lat, lon);
+            marker.setLatLng(newLatLng);
+            map.setView(newLatLng, 13);
+        }
+
+        function getPaceString(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.round(totalSeconds % 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function haversine_distance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of Earth in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function jitterLocation(lat, lon, radiusMeters) {
+            const R = 6371e3; // Earth radius in meters
+            const randomDist = Math.random() * radiusMeters;
+            const randomBearing = Math.random() * 2 * Math.PI; // in radians
+
+            const latRad = lat * Math.PI / 180;
+            const lonRad = lon * Math.PI / 180;
+
+            const newLatRad = Math.asin(Math.sin(latRad) * Math.cos(randomDist / R) +
+                                      Math.cos(latRad) * Math.sin(randomDist / R) * Math.cos(randomBearing));
+            
+            const newLonRad = lonRad + Math.atan2(Math.sin(randomBearing) * Math.sin(randomDist / R) * Math.cos(latRad),
+                                                Math.cos(randomDist / R) - Math.sin(latRad) * Math.sin(newLatRad));
+
+            return {
+                lat: newLatRad * 180 / Math.PI,
+                lon: newLonRad * 180 / Math.PI
+            };
+        }
+
+        // --- CORE LOGIC: GPX GENERATION ---
+        
+        async function generateRouteOSRM(startPoint, endPoint, distanceKm) {
+            const R = 6371;
+            const distRad = (distanceKm / 3) / R; 
+
+            const bearing1 = Math.random() * 360 * Math.PI / 180;
+            
+            const lat1Rad = startPoint.lat * Math.PI / 180;
+            const lon1Rad = startPoint.lon * Math.PI / 180;
+
+            const lat2Rad = Math.asin(Math.sin(lat1Rad) * Math.cos(distRad) + Math.cos(lat1Rad) * Math.sin(distRad) * Math.cos(bearing1));
+            const lon2Rad = lon1Rad + Math.atan2(Math.sin(bearing1) * Math.sin(distRad) * Math.cos(lat1Rad), Math.cos(distRad) - Math.sin(lat1Rad) * Math.sin(lat2Rad));
+            
+            const waypoint2 = { lon: lon2Rad * 180 / Math.PI, lat: lat2Rad * 180 / Math.PI };
+            
+            const coords = `${startPoint.lon},${startPoint.lat};${waypoint2.lon},${waypoint2.lat};${endPoint.lon},${endPoint.lat}`;
+            
+            const url = `https://router.project-osrm.org/route/v1/foot/${coords}?overview=full&geometries=geojson`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`OSRM API error: ${response.statusText}`);
+                const data = await response.json();
+                if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) throw new Error('Could not find a route.');
+                
+                return data.routes[0].geometry.coordinates.map(coord => ({ lat: coord[1], lon: coord[0] }));
+
+            } catch (error) {
+                console.error("OSRM route generation failed:", error);
+                alert("Không thể tạo quỹ đạo theo đường thực tế. Vui lòng thử lại hoặc chọn vị trí khác.");
+                return null;
+            }
+        }
+
+        function addCumulativeDistance(route) {
+            let cumulativeDistance = 0;
+            return route.map((point, i) => {
+                if (i > 0) {
+                    const prevPoint = route[i - 1];
+                    cumulativeDistance += haversine_distance(prevPoint.lat, prevPoint.lon, point.lat, point.lon) * 1000;
+                }
+                return { ...point, dist: cumulativeDistance };
+            });
+        }
+
+        function resampleRoute(route, targetDistanceKm) {
+            const routeWithDist = addCumulativeDistance(route);
+            const actualRouteLengthM = routeWithDist.length > 0 ? routeWithDist[routeWithDist.length - 1].dist : 0;
+            const targetDistanceM = targetDistanceKm * 1000;
+
+            if (actualRouteLengthM < 1) return route;
+
+            const resampled = [];
+            const numPoints = Math.floor(targetDistanceKm * 150);
+
+            for (let i = 0; i < numPoints; i++) {
+                const targetDistForPoint = (i / (numPoints - 1)) * targetDistanceM;
+                
+                let segmentIndex = routeWithDist.findIndex(p => p.dist >= targetDistForPoint);
+                if (segmentIndex === -1) segmentIndex = routeWithDist.length - 1;
+                if (segmentIndex === 0) {
+                    resampled.push({ lat: routeWithDist[0].lat, lon: routeWithDist[0].lon });
+                    continue;
+                }
+
+                const p1 = routeWithDist[segmentIndex - 1];
+                const p2 = routeWithDist[segmentIndex];
+
+                const segmentLength = p2.dist - p1.dist;
+                if (segmentLength < 1e-6) {
+                     resampled.push({ lat: p1.lat, lon: p1.lon });
+                     continue;
+                }
+                
+                const distIntoSegment = targetDistForPoint - p1.dist;
+                const ratio = distIntoSegment / segmentLength;
+
+                const lat = p1.lat + (p2.lat - p1.lat) * ratio;
+                const lon = p1.lon + (p2.lon - p1.lon) * ratio;
+                
+                resampled.push({ lat, lon });
+            }
+            return resampled;
+        }
+
+        function simulateRunData(route, totalDistanceKm, avgPaceSecPerKm, startTime) {
+            const trackpoints = [];
+            const totalDurationSec = totalDistanceKm * avgPaceSecPerKm;
+            const avgSpeedMps = 1000 / avgPaceSecPerKm;
+
+            const warmUpDuration = Math.min(300, totalDurationSec * 0.1);
+            const coolDownDuration = Math.min(300, totalDurationSec * 0.1);
+            const mainRunDuration = totalDurationSec - warmUpDuration - coolDownDuration;
+
+            let currentTime = new Date(startTime);
+            let cumulativeDistance = 0;
+            
+            const noise = (t) => Math.sin(t * 0.5) * 0.3 + Math.sin(t * 1.2) * 0.2 + Math.sin(t * 2.5) * 0.1;
+
+            for (let t = 0; t < totalDurationSec; t++) {
+                let speedModifier = 1.0;
+                if (t < warmUpDuration) {
+                    speedModifier = 0.7 + 0.3 * (t / warmUpDuration);
+                } else if (t > warmUpDuration + mainRunDuration) {
+                    speedModifier = 1.0 - 0.4 * ((t - warmUpDuration - mainRunDuration) / coolDownDuration);
+                } else {
+                    speedModifier = 1.0 + noise(t / 60) * 0.15;
+                }
+
+                const currentSpeedMps = avgSpeedMps * speedModifier;
+                cumulativeDistance += currentSpeedMps;
+                
+                const distanceRatio = cumulativeDistance / (totalDistanceKm * 1000);
+                const routeIndex = Math.min(Math.floor(distanceRatio * route.length), route.length - 1);
+                const currentPoint = route[routeIndex];
+
+                const baseHr = 80 + (currentSpeedMps / avgSpeedMps) * 80;
+                const hr = Math.round(baseHr + (Math.random() - 0.5) * 5);
+
+                const baseCadence = 80 + (currentSpeedMps / avgSpeedMps) * 10;
+                const cadence = Math.round(baseCadence + (Math.random() - 0.5) * 4);
+
+                const lastEle = trackpoints.length > 0 ? parseFloat(trackpoints[trackpoints.length - 1].ele) : 10;
+                const ele = lastEle + (Math.random() - 0.5) * 0.2;
+
+                trackpoints.push({
+                    lat: currentPoint.lat.toFixed(7),
+                    lon: currentPoint.lon.toFixed(7),
+                    ele: ele.toFixed(1),
+                    time: new Date(currentTime),
+                    hr: Math.min(190, Math.max(70, hr)),
+                    cad: Math.min(100, Math.max(70, cadence)) * 2,
+                });
+
+                currentTime.setSeconds(currentTime.getSeconds() + 1);
+            }
+            return trackpoints;
+        }
+
+        function createGpxString(trackpoints, startTime) {
+            const startTimeISO = startTime.toISOString().replace(/\.\d{3}/, '');
+            const runName = `Evening Run`;
+
+            let trkptXML = '';
+            trackpoints.forEach(tp => {
+                trkptXML += `
+   <trkpt lat="${tp.lat}" lon="${tp.lon}">
+    <ele>${tp.ele}</ele>
+    <time>${tp.time.toISOString().replace(/\.\d{3}/, '')}</time>
+    <extensions>
+     <gpxtpx:TrackPointExtension>
+      <gpxtpx:hr>${tp.hr}</gpxtpx:hr>
+      <gpxtpx:cad>${tp.cad}</gpxtpx:cad>
+     </gpxtpx:TrackPointExtension>
+    </extensions>
+   </trkpt>`;
+            });
+
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd" creator="StravaGPX" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+ <metadata>
+  <time>${startTimeISO}</time>
+ </metadata>
+ <trk>
+  <name>${runName}</name>
+  <type>running</type>
+  <trkseg>${trkptXML}
+  </trkseg>
+ </trk>
+</gpx>`;
+        }
+
+        // --- MAIN HANDLER ---
+        async function handleGeneration() {
+            const startDateValue = startDateInput.value;
+            const endDateValue = endDateInput.value;
+
+            if (!startDateValue || !endDateValue) {
+                 alert("Vui lòng chọn ngày bắt đầu và kết thúc.");
+                return;
+            }
+            
+            const startDate = new Date(startDateValue);
+            const endDate = new Date(endDateValue);
+            
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate < startDate) {
+                alert("Vui lòng chọn khoảng ngày hợp lệ.");
+                return;
+            }
+
+            loadingModal.classList.remove('hidden');
+            resultsCard.classList.add('hidden');
+            fileList.innerHTML = '';
+            generatedFiles = [];
+
+            const dateArray = [];
+            for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+                dateArray.push(new Date(dt));
+            }
+
+            for (let i = 0; i < dateArray.length; i++) {
+                const currentDate = dateArray[i];
+                loadingText.textContent = `Đang tìm lộ trình...`;
+                loadingProgress.textContent = `File ${i + 1} / ${dateArray.length}`;
+                
+                const startLat = parseFloat(latInput.value);
+                const startLon = parseFloat(lonInput.value);
+                let targetDistance = parseFloat(distanceSlider.value);
+                let targetPace = parseInt(paceSlider.value);
+                
+                if (document.getElementById('randomize').checked) {
+                    targetDistance *= 1 + (Math.random() - 0.5) * 0.2;
+                    targetPace *= 1 + (Math.random() - 0.5) * 0.2;
+                }
+                
+                const actualStartPoint = jitterLocation(startLat, startLon, 100);
+                const actualEndPoint = jitterLocation(startLat, startLon, 300);
+
+                const baseRoute = await generateRouteOSRM(actualStartPoint, actualEndPoint, targetDistance);
+                if (!baseRoute) {
+                    loadingModal.classList.add('hidden');
+                    return;
+                }
+
+                const route = resampleRoute(baseRoute, targetDistance);
+
+                loadingText.textContent = `Đang mô phỏng dữ liệu...`;
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const [startH, startM] = document.getElementById('start-time').value.split(':').map(Number);
+                const [endH, endM] = document.getElementById('end-time').value.split(':').map(Number);
+                const startTimestamp = new Date(currentDate).setHours(startH, startM, 0, 0);
+                const endTimestamp = new Date(currentDate).setHours(endH, endM, 0, 0);
+                const randomTimestamp = startTimestamp + Math.random() * (endTimestamp - startTimestamp);
+                const runStartTime = new Date(randomTimestamp);
+                
+                const trackpoints = simulateRunData(route, targetDistance, targetPace, runStartTime);
+                const gpxContent = createGpxString(trackpoints, runStartTime);
+                
+                const d = runStartTime;
+                const dateStr = [d.getDate().toString().padStart(2, '0'), (d.getMonth() + 1).toString().padStart(2, '0'), d.getFullYear()].join('/');
+                const timeStr24h = [d.getHours().toString().padStart(2, '0'), d.getMinutes().toString().padStart(2, '0'), d.getSeconds().toString().padStart(2, '0')].join(':');
+                
+                const fileNameForDownload = `Run_${dateStr.replace(/\//g, '-')}_${timeStr24h.replace(/:/g, '-')}.gpx`;
+                const displayName = `Run ${dateStr} ${timeStr24h}`;
+                
+                generatedFiles.push({ name: fileNameForDownload, displayName: displayName, content: gpxContent, distance: targetDistance, pace: targetPace, route: route });
+            }
+
+            displayResults();
+            loadingModal.classList.add('hidden');
+            loadingText.textContent = `Đang tạo dữ liệu...`;
+        }
+
+        function displayResults() {
+            resultsSummary.textContent = `Đã tạo thành công ${generatedFiles.length} file GPX.`;
+            fileList.innerHTML = '';
+            generatedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex justify-between items-center bg-slate-100 p-2 rounded-md';
+                fileItem.innerHTML = `
+                    <div class="flex items-center space-x-2 flex-grow min-w-0">
+                        <input type="checkbox" class="file-checkbox h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" data-index="${index}">
+                        <i data-lucide="file" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+                        <span class="text-sm font-medium truncate text-slate-800" title="${file.displayName}">${file.displayName}</span>
+                    </div>
+                    <div class="text-xs text-slate-500 flex-shrink-0 ml-2">
+                        <span>${file.distance.toFixed(2)} km</span> | 
+                        <span>${getPaceString(file.pace)}/km</span>
+                    </div>
+                    <button class="preview-btn ml-2 p-1 text-red-500 hover:text-red-700 flex-shrink-0" data-index="${index}" title="Xem quỹ đạo">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.currentTarget.dataset.index;
+                    previewRoute(index);
+                });
+            });
+
+            const allCheckboxes = document.querySelectorAll('.file-checkbox');
+            allCheckboxes.forEach(cb => cb.checked = true);
+
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.addEventListener('change', (e) => {
+                allCheckboxes.forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+            });
+
+            lucide.createIcons();
+            resultsCard.classList.remove('hidden');
+        }
+
+        function previewRoute(index) {
+            const file = generatedFiles[index];
+            if (!file || !file.route) return;
+
+            previewTitle.textContent = `Xem trước: ${file.displayName}`;
+            previewModal.classList.remove('hidden');
+
+            if (!previewMap) {
+                previewMap = L.map('preview-map');
+                L.tileLayer(mapUrl, { attribution: mapAttribution }).addTo(previewMap);
+            }
+            
+            previewMap.eachLayer(layer => {
+                if (!!layer.toGeoJSON) {
+                    previewMap.removeLayer(layer);
+                }
+            });
+
+            const latLngs = file.route.map(p => [p.lat, p.lon]);
+            const polyline = L.polyline(latLngs, { color: '#d71921' }).addTo(previewMap);
+            previewMap.fitBounds(polyline.getBounds().pad(0.1));
+            
+            setTimeout(() => previewMap.invalidateSize(), 100);
+        }
+
+        function downloadSelectedFiles() {
+            const selectedIndices = [...document.querySelectorAll('.file-checkbox:checked')].map(cb => parseInt(cb.dataset.index));
+            
+            if (selectedIndices.length === 0) {
+                alert("Vui lòng chọn ít nhất một file để tải.");
+                return;
+            }
+
+            const filesToDownload = selectedIndices.map(i => generatedFiles[i]);
+
+            if (zipCheckbox.checked) {
+                const zip = new JSZip();
+                filesToDownload.forEach(file => {
+                    zip.file(file.name, file.content);
+                });
+                zip.generateAsync({ type: "blob" }).then(content => {
+                    downloadBlob(content, "strava_runs.zip");
+                });
+            } else {
+                filesToDownload.forEach((file, i) => {
+                    setTimeout(() => {
+                        const blob = new Blob([file.content], { type: 'application/gpx+xml' });
+                        downloadBlob(blob, file.name);
+                    }, i * 300);
+                });
+            }
+        }
+
+        function downloadBlob(blob, fileName) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+        
+        // --- INITIAL SETUP ---
+        function initializeApp() {
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.value = today;
+            endDateInput.value = today;
+            formatDateDisplay(startDateInput, startDateDisplay);
+            formatDateDisplay(endDateInput, endDateDisplay);
+
+            for (let i = 1; i <= 7; i++) {
+                const button = document.createElement('button');
+                button.className = 'px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500';
+                button.textContent = `${i} Ngày`;
+                button.dataset.days = i;
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const days = parseInt(e.currentTarget.dataset.days);
+                    const startDateValue = startDateInput.value;
+                    if (startDateValue) {
+                        const startDate = new Date(startDateValue);
+                        const endDate = new Date(startDate.getTime());
+                        endDate.setDate(startDate.getDate() + days - 1);
+                        endDateInput.value = endDate.toISOString().split('T')[0];
+                        formatDateDisplay(endDateInput, endDateDisplay);
+                    } else {
+                        alert("Vui lòng chọn ngày bắt đầu trước.");
+                    }
+                });
+                quickDateSelector.appendChild(button);
+            }
+
+            Object.keys(CITIES).forEach(name => {
+                const button = document.createElement('button');
+                button.className = 'px-2 py-1 text-xs font-semibold text-slate-700 bg-slate-100 rounded-md hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500';
+                button.textContent = name;
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const city = CITIES[name];
+                    updateMapLocation(city.lat, city.lon);
+                });
+                citySelector.appendChild(button);
+            });
+        }
+
+        initializeApp();
+
+    </script>
+</body>
+</html>
