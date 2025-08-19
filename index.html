@@ -50,12 +50,12 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-slate-300">
+<body class="bg-slate-50 text-slate-800">
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white">GPX Run Simulator</h1>
-            <p class="text-slate-400 mt-2">Tạo dữ liệu chạy bộ GPX chân thực cho Strava</p>
+            <h1 class="text-4xl font-bold text-slate-900">GPX Run Simulator</h1>
+            <p class="text-slate-600 mt-2">Tạo dữ liệu chạy bộ GPX chân thực cho Strava</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -63,8 +63,8 @@
             <!-- Left Column: Controls -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- Start Location Card -->
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center text-white"><i data-lucide="map-pin" class="w-5 h-5 mr-2 text-red-500"></i>Vị trí bắt đầu</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="map-pin" class="w-5 h-5 mr-2 text-red-500"></i>Vị trí bắt đầu</h2>
                     <div id="map"></div>
                     <div class="mt-4">
                         <div class="flex flex-wrap gap-2" id="city-selector">
@@ -77,19 +77,19 @@
                 </div>
 
                 <!-- Performance Card -->
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center text-white"><i data-lucide="zap" class="w-5 h-5 mr-2 text-red-500"></i>Thông số hiệu suất</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="zap" class="w-5 h-5 mr-2 text-red-500"></i>Thông số hiệu suất</h2>
                     <div>
-                        <label for="distance" class="block text-sm font-medium text-slate-400">Quãng đường (<span id="distance-label">6.0</span> km)</label>
-                        <input type="range" id="distance" min="1" max="42" value="6" step="0.1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <label for="distance" class="block text-sm font-medium text-slate-700">Quãng đường (<span id="distance-label">6.0</span> km)</label>
+                        <input type="range" id="distance" min="1" max="42" value="6" step="0.1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                     </div>
                     <div class="mt-4">
-                        <label for="pace" class="block text-sm font-medium text-slate-400">Pace trung bình (<span id="pace-label">7:30</span> /km)</label>
-                        <input type="range" id="pace" min="210" max="600" value="450" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <label for="pace" class="block text-sm font-medium text-slate-700">Pace trung bình (<span id="pace-label">7:30</span> /km)</label>
+                        <input type="range" id="pace" min="210" max="600" value="450" step="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                     </div>
                     <div class="mt-4 flex items-center">
-                        <input id="randomize" type="checkbox" checked class="h-4 w-4 rounded border-gray-600 bg-gray-700 text-red-600 focus:ring-red-500">
-                        <label for="randomize" class="ml-2 block text-sm text-slate-300">Thêm ngẫu nhiên (+/- 10%)</label>
+                        <input id="randomize" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                        <label for="randomize" class="ml-2 block text-sm text-slate-900">Thêm ngẫu nhiên (+/- 10%)</label>
                     </div>
                 </div>
             </div>
@@ -97,25 +97,25 @@
             <!-- Right Column: Generation & Results -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- Batch Generation Card -->
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center text-white"><i data-lucide="calendar-days" class="w-5 h-5 mr-2 text-red-500"></i>Thiết lập xuất hàng loạt</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center"><i data-lucide="calendar-days" class="w-5 h-5 mr-2 text-red-500"></i>Thiết lập xuất hàng loạt</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="start-date-display" class="block text-sm font-medium text-slate-400">Ngày bắt đầu</label>
+                            <label for="start-date-display" class="block text-sm font-medium text-slate-700">Ngày bắt đầu</label>
                             <div class="relative mt-1">
-                                <div id="start-date-display" class="w-full rounded-md border border-gray-600 shadow-sm bg-gray-700 px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-white">
+                                <div id="start-date-display" class="w-full rounded-md border border-slate-300 shadow-sm bg-white px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-slate-800">
                                     <span></span>
-                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>
                                 </div>
                                 <input type="date" id="start-date" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
                             </div>
                         </div>
                         <div>
-                            <label for="end-date-display" class="block text-sm font-medium text-slate-400">Ngày kết thúc</label>
+                            <label for="end-date-display" class="block text-sm font-medium text-slate-700">Ngày kết thúc</label>
                              <div class="relative mt-1">
-                                <div id="end-date-display" class="w-full rounded-md border border-gray-600 shadow-sm bg-gray-700 px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-white">
+                                <div id="end-date-display" class="w-full rounded-md border border-slate-300 shadow-sm bg-white px-3 py-2 text-left cursor-pointer sm:text-sm flex justify-between items-center text-slate-800">
                                     <span></span>
-                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i>
                                 </div>
                                 <input type="date" id="end-date" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
                             </div>
@@ -127,15 +127,15 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <label class="block text-sm font-medium text-slate-400">Khung giờ chạy trong ngày</label>
+                        <label class="block text-sm font-medium text-slate-700">Khung giờ chạy trong ngày</label>
                         <div class="grid grid-cols-2 gap-4 mt-1">
                             <div>
                                 <label for="start-time" class="block text-xs text-slate-500">Sớm nhất lúc</label>
-                                <input type="time" id="start-time" value="05:00" class="block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                                <input type="time" id="start-time" value="05:00" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                             </div>
                             <div>
                                 <label for="end-time" class="block text-xs text-slate-500">Muộn nhất lúc</label>
-                                <input type="time" id="end-time" value="16:00" class="block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                                <input type="time" id="end-time" value="16:00" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                             </div>
                         </div>
                     </div>
@@ -146,20 +146,20 @@
                 </div>
 
                 <!-- Results Card -->
-                <div id="results-card" class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md hidden">
+                <div id="results-card" class="bg-white p-6 rounded-lg shadow-md hidden">
                     <div class="flex justify-between items-center mb-4">
-                         <h2 class="text-xl font-semibold flex items-center text-white"><i data-lucide="check-circle" class="w-5 h-5 mr-2 text-green-500"></i>Hoàn tất!</h2>
+                         <h2 class="text-xl font-semibold flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-2 text-green-500"></i>Hoàn tất!</h2>
                          <div class="flex items-center">
-                            <input id="select-all-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-600 bg-gray-700 text-red-600 focus:ring-red-500">
-                            <label for="select-all-checkbox" class="ml-2 block text-sm text-slate-300">Chọn tất cả</label>
+                            <input id="select-all-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                            <label for="select-all-checkbox" class="ml-2 block text-sm text-slate-900">Chọn tất cả</label>
                         </div>
                     </div>
-                    <p id="results-summary" class="text-slate-400 mb-4"></p>
+                    <p id="results-summary" class="text-slate-600 mb-4"></p>
                     <div id="file-list" class="max-h-60 overflow-y-auto space-y-2 pr-2"></div>
-                    <div class="mt-4 pt-4 border-t border-gray-700">
+                    <div class="mt-4 pt-4 border-t border-slate-200">
                         <div class="flex items-center mb-4">
-                            <input id="zip-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-600 bg-gray-700 text-red-600 focus:ring-red-500">
-                            <label for="zip-checkbox" class="ml-2 block text-sm text-slate-300">Gom thành 1 file .zip</label>
+                            <input id="zip-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                            <label for="zip-checkbox" class="ml-2 block text-sm text-slate-900">Gom thành 1 file .zip</label>
                         </div>
                         <button id="download-selected-btn" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center">
                             <i data-lucide="download" class="w-5 h-5 mr-2"></i>
@@ -172,18 +172,18 @@
     </div>
     
     <!-- Loading Modal -->
-    <div id="loading-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-xl flex items-center space-x-4 border border-gray-700">
-            <div class="loader w-12 h-12 rounded-full border-4 border-gray-600"></div>
+    <div id="loading-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl flex items-center space-x-4">
+            <div class="loader w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div>
-                <p id="loading-text" class="text-lg font-semibold text-white">Đang tạo dữ liệu...</p>
-                <p id="loading-progress" class="text-slate-400">File 1 / 10</p>
+                <p id="loading-text" class="text-lg font-semibold text-slate-800">Đang tạo dữ liệu...</p>
+                <p id="loading-progress" class="text-slate-600">File 1 / 10</p>
             </div>
         </div>
     </div>
 
     <!-- Preview Modal -->
-    <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-4 rounded-lg shadow-xl w-11/12 max-w-4xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="preview-title" class="text-lg font-semibold text-slate-900">Xem trước quỹ đạo</h3>
@@ -206,6 +206,7 @@
         const distanceLabel = document.getElementById('distance-label');
         const paceSlider = document.getElementById('pace');
         const paceLabel = document.getElementById('pace-label');
+        const randomizeCheckbox = document.getElementById('randomize');
         const generateBtn = document.getElementById('generate-btn');
         const loadingModal = document.getElementById('loading-modal');
         const loadingText = document.getElementById('loading-text');
@@ -224,6 +225,8 @@
         const startDateDisplay = document.getElementById('start-date-display').querySelector('span');
         const endDateDisplay = document.getElementById('end-date-display').querySelector('span');
         const citySelector = document.getElementById('city-selector');
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
 
         let generatedFiles = [];
         let previewMap = null;
@@ -330,6 +333,61 @@
                 lat: newLatRad * 180 / Math.PI,
                 lon: newLonRad * 180 / Math.PI
             };
+        }
+
+        // --- COOKIE FUNCTIONS ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function saveSettings() {
+            const settings = {
+                lat: latInput.value,
+                lon: lonInput.value,
+                distance: distanceSlider.value,
+                pace: paceSlider.value,
+                randomize: randomizeCheckbox.checked,
+                startTime: startTimeInput.value,
+                endTime: endTimeInput.value,
+            };
+            setCookie('gpxSimulatorSettings', JSON.stringify(settings), 365);
+        }
+
+        function loadSettings() {
+            const settingsCookie = getCookie('gpxSimulatorSettings');
+            if (settingsCookie) {
+                const settings = JSON.parse(settingsCookie);
+                
+                updateMapLocation(parseFloat(settings.lat) || 10.7769, parseFloat(settings.lon) || 106.7009);
+                
+                distanceSlider.value = settings.distance || 6;
+                distanceLabel.textContent = parseFloat(distanceSlider.value).toFixed(1);
+
+                paceSlider.value = settings.pace || 450;
+                paceLabel.textContent = getPaceString(paceSlider.value);
+                
+                randomizeCheckbox.checked = settings.randomize !== false; // Default to true if undefined
+
+                startTimeInput.value = settings.startTime || "05:00";
+                endTimeInput.value = settings.endTime || "16:00";
+            }
         }
 
         // --- CORE LOGIC: GPX GENERATION ---
@@ -507,6 +565,8 @@
 
         // --- MAIN HANDLER ---
         async function handleGeneration() {
+            saveSettings(); // Save settings on generation
+            
             const startDateValue = startDateInput.value;
             const endDateValue = endDateInput.value;
 
@@ -543,7 +603,7 @@
                 let targetDistance = parseFloat(distanceSlider.value);
                 let targetPace = parseInt(paceSlider.value);
                 
-                if (document.getElementById('randomize').checked) {
+                if (randomizeCheckbox.checked) {
                     targetDistance *= 1 + (Math.random() - 0.5) * 0.2;
                     targetPace *= 1 + (Math.random() - 0.5) * 0.2;
                 }
@@ -562,8 +622,8 @@
                 loadingText.textContent = `Đang mô phỏng dữ liệu...`;
                 await new Promise(resolve => setTimeout(resolve, 50));
 
-                const [startH, startM] = document.getElementById('start-time').value.split(':').map(Number);
-                const [endH, endM] = document.getElementById('end-time').value.split(':').map(Number);
+                const [startH, startM] = startTimeInput.value.split(':').map(Number);
+                const [endH, endM] = endTimeInput.value.split(':').map(Number);
                 const startTimestamp = new Date(currentDate).setHours(startH, startM, 0, 0);
                 const endTimestamp = new Date(currentDate).setHours(endH, endM, 0, 0);
                 const randomTimestamp = startTimestamp + Math.random() * (endTimestamp - startTimestamp);
@@ -697,9 +757,15 @@
         
         // --- INITIAL SETUP ---
         function initializeApp() {
+            loadSettings(); // Load settings from cookies first
+
             const today = new Date().toISOString().split('T')[0];
             startDateInput.value = today;
-            endDateInput.value = today;
+            // Don't override endDate if it was loaded from cookies
+            if (!endDateInput.value) {
+                endDateInput.value = today;
+            }
+            
             formatDateDisplay(startDateInput, startDateDisplay);
             formatDateDisplay(endDateInput, endDateDisplay);
 
